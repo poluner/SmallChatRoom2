@@ -1,27 +1,16 @@
 package client;
 
 import java.net.*;
-import iostream.*;
 
-public class TalkClient {
+public class TalkClient {// 客户端将发送和接收分两个线程，使得发送接收不互相干扰
 	public static void main(String args[]) {
 		try {
 			Socket socket = new Socket("127.0.0.1", 4700);
-			IOStream ioStream = new IOStream(socket);
-			while (true) {// 由于发送在接收前面，所以每次要自己发送之后才能接收到消息
-				// 发送
-				String sendLine = ioStream.sin.nextLine();// 如果向0号客户发"hello"，那么就输入"0hello"
-				ioStream.os.println(sendLine);
-				ioStream.os.flush();
-
-				// 接收
-				String line = ioStream.is.readLine();
-				int yourId = Integer.parseInt(line.substring(0, 1));
-				String message = line.substring(1, line.length());
-				System.out.println("client " + yourId + " say:" + message);
-			}
+			new SendThread(socket).start();//发送线程
+			new ReceiveThread(socket).start();//接收线程
 		} catch (Exception e) {
-			System.out.println("ErrorClient:" + e);
+			System.out.println("Error" + e);
 		}
 	}
+
 }
