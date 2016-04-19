@@ -2,6 +2,9 @@ package iostream;
 
 import java.io.*;
 import java.net.Socket;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 
 public class IOStream {
@@ -42,7 +45,10 @@ public class IOStream {
 			fileType += (char) c0;
 		}
 
-		String fileName = "tmp" + fileType;
+		Date date = new Date();
+		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+		String time = dateFormat.format(date);
+		String fileName = time + fileType;
 		FileOutputStream fos = new FileOutputStream(fileName);
 
 		int c[] = new int[EOSsize];
@@ -83,5 +89,27 @@ public class IOStream {
 				yourStream.os.write(c[i]);
 			}
 		}
+	}
+	public String messageFromStream() throws Exception {// 返回收到的信息
+		byte[] b = new byte[102400];
+		int cnt = 0;
+
+		int c[] = new int[EOSsize];
+		while (true) {
+			for (int i = 0; i < EOSsize; i++)
+				c[i] = -1;
+			for (int i = 0; i < EOSsize; i++) {
+				if ((c[i] = is.read()) != 255)
+					break;
+			}
+			if (c[EOSsize - 1] == 255)
+				break;
+			for (int i = 0; i < EOSsize; i++) {
+				if (c[i] == -1)
+					break;
+				b[cnt++] = (byte) c[i];
+			}
+		}
+		return new String(b, "GBK");// 防止中文乱码
 	}
 }

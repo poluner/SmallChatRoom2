@@ -18,22 +18,23 @@ public class ServerThread extends Thread {
 
 	public void run() { // 服务器线程
 		try {
+			myStream.os.write(myId);
+			myStream.os.flush();
 			while (true) {// 服务器永远运行
 				// 从自己在服务器中布置的socket中取出自己发送的信息，分离出自己要发送的目标客户的Id
+				while (myStream.is.available() == 0)
+					sleep(10);// 没有接收到就一直睡眠
 
-				int yourId = myStream.is.read();
-
-				// 确定目标客户
+				int yourId = myStream.is.read();// 目标客户
 				IOStream yourStream = MultiTalkServer.allStream.elementAt(yourId);
 
-				// 将信息送入目标客户的socket中
-				yourStream.os.write(myId);
+				yourStream.os.write(myId);// 告知目标客户自己的ID
 				myStream.transTo(yourStream);
 				yourStream.addEOS();
 				yourStream.os.flush();
 			}
 		} catch (Exception e) {
-			System.out.println("Error:" + e);// 出错，打印出错信息
+			System.out.println("Error:" + e);
 		}
 	}
 }
