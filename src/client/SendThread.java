@@ -4,17 +4,25 @@ import java.net.Socket;
 import iostream.IOStream;
 
 public class SendThread extends Thread {
-	IOStream ioStream ;
+	IOStream ioStream;
 
-	public SendThread(Socket socket) {
+	public SendThread(Socket socket) throws Exception {
 		ioStream = new IOStream(socket);
 	}
 
 	public void run() {// 发送线程
-		while (true) {
-			String sendLine = ioStream.sin.nextLine();
-			ioStream.os.println(sendLine);
-			ioStream.os.flush();
+		try {
+			while (true) {
+				int yourId = ioStream.sin.nextInt();//目标客户
+				String pathName = ioStream.sin.next();//文件名
+				ioStream.os.write(yourId);
+				ioStream.fileToStream(pathName);
+				ioStream.addEOS();
+				ioStream.os.flush();
+				System.out.println("file sended!");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }

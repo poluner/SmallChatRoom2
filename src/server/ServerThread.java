@@ -20,15 +20,16 @@ public class ServerThread extends Thread {
 		try {
 			while (true) {// 服务器永远运行
 				// 从自己在服务器中布置的socket中取出自己发送的信息，分离出自己要发送的目标客户的Id
-				String line = myStream.is.readLine();
-				int yourId = Integer.parseInt(line.substring(0, 1));
-				String message = line.substring(1, line.length());
+
+				int yourId = myStream.is.read();
 
 				// 确定目标客户
 				IOStream yourStream = MultiTalkServer.allStream.elementAt(yourId);
 
 				// 将信息送入目标客户的socket中
-				yourStream.os.println(myId + message);
+				yourStream.os.write(myId);
+				myStream.transTo(yourStream);
+				yourStream.addEOS();
 				yourStream.os.flush();
 			}
 		} catch (Exception e) {
