@@ -5,17 +5,29 @@ import java.net.Socket;
 import java.util.Scanner;
 
 public class IOStream {
-	public PrintWriter os;
-	public BufferedReader is;
+	public OutputStream os;
+	public InputStream is;
 	public Scanner sin;
 
-	public IOStream(Socket socket) {
-		try {
-			os = new PrintWriter(socket.getOutputStream());// 由Socket对象得到输出流，并构造PrintWriter对象
-			is = new BufferedReader(new InputStreamReader(socket.getInputStream()));// 由Socket对象得到输入流，并构造相应的BufferedReader对象
-			sin = new Scanner(System.in);
-		} catch (IOException e) {
-			e.printStackTrace();
+	public IOStream(Socket socket) throws Exception {
+		os = socket.getOutputStream();
+		is = socket.getInputStream();
+		sin = new Scanner(System.in);
+	}
+
+	public String getMessage() throws Exception {
+		int c;
+		String message = "";
+		while ((c = is.read()) != 255) {
+			message += (char) c;
+		}
+		return message;
+	}
+
+	public void transTo(IOStream yourStream) throws IOException {
+		int c;
+		while ((c = is.read()) != 255) {
+			yourStream.os.write(c);
 		}
 	}
 }

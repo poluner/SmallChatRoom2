@@ -17,7 +17,7 @@ public class MultiTalkServer {
 				allStream.addElement(new IOStream(socket));
 				new ServerThread().start();
 			}
-		} catch (IOException e) {
+		} catch (Exception e) {
 			System.out.println("Could not listen on port:4700.");// 出错，打印出错信息
 		}
 	}

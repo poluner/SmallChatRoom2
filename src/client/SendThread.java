@@ -4,17 +4,24 @@ import java.net.Socket;
 import iostream.IOStream;
 
 public class SendThread extends Thread {
-	IOStream ioStream ;
+	IOStream ioStream;
 
-	public SendThread(Socket socket) {
+	public SendThread(Socket socket) throws Exception {
 		ioStream = new IOStream(socket);
 	}
 
 	public void run() {// ·¢ËÍÏß³Ì
-		while (true) {
-			String sendLine = ioStream.sin.nextLine();
-			ioStream.os.println(sendLine);
-			ioStream.os.flush();
+		try {
+			while (true) {
+				int yourId = ioStream.sin.nextInt();
+				String sendLine = ioStream.sin.next();
+				ioStream.os.write(yourId);
+				ioStream.os.write(sendLine.getBytes());
+				ioStream.os.write(255);
+				ioStream.os.flush();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }

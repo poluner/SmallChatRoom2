@@ -6,17 +6,15 @@ import iostream.IOStream;
 public class ReceiveThread extends Thread {
 	IOStream ioStream;
 
-	public ReceiveThread(Socket socket) {
+	public ReceiveThread(Socket socket) throws Exception {
 		ioStream = new IOStream(socket);
 	}
 
 	public void run() {// 接收线程
 		try {
 			while (true) {
-				String line = ioStream.is.readLine();
-				int yourId = Integer.parseInt(line.substring(0, 1));
-				String message = line.substring(1, line.length());
-
+				int yourId = ioStream.is.read();
+				String message = ioStream.getMessage();
 				System.out.println("client " + yourId + " say:" + message);
 			}
 		} catch (Exception e) {
