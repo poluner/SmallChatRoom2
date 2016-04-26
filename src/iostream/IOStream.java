@@ -2,10 +2,10 @@ package iostream;
 
 import java.io.*;
 import java.net.Socket;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Scanner;
+import java.text.*;
+import java.util.*;
+
+import server.MultiTalkServer;
 
 public class IOStream {
 	final static int EOSsize = 1000;// EndOfStream,流结束标志长度
@@ -19,10 +19,25 @@ public class IOStream {
 		sin = new Scanner(System.in);
 	}
 
-	public void addEOS() throws Exception {
+	public void addEOS() throws Exception {// EOS由一个254加EOSsize个255组成，避免文件结尾是255而误判成EOS
+		os.write(254);
 		for (int i = 0; i < EOSsize; i++) {
 			os.write(255);
 		}
+	}
+
+	public Vector<Integer> mayBeEOS() throws IOException {// 只有发现了一个254和EOSsize个255才是真正的EOS
+		Vector<Integer> vi = new Vector<Integer>();
+
+		vi.addElement(is.read());
+		if (vi.lastElement() != 254)
+			return vi;
+		for (int i = 0; i < EOSsize; i++) {
+			vi.addElement(is.read());
+			if (vi.lastElement() != 255)
+				return vi;
+		}
+		return vi;// 这里返回的才是EOS
 	}
 
 	public void fileToStream(String pathName) throws Exception {// 将文件pathName写入到流中
@@ -51,21 +66,13 @@ public class IOStream {
 		String fileName = time + fileType;
 		FileOutputStream fos = new FileOutputStream(fileName);
 
-		int c[] = new int[EOSsize];
 		while (true) {
-			for (int i = 0; i < EOSsize; i++)
-				c[i] = -1;
+			Vector<Integer> mayBeEos = mayBeEOS();
+			if (mayBeEos.size() == EOSsize + 1)
+				break;// 如果是真正的EOS就结束了
 
-			for (int i = 0; i < EOSsize; i++) {
-				if ((c[i] = is.read()) != 255)
-					break;
-			}
-			if (c[EOSsize - 1] == 255)
-				break;
-			for (int i = 0; i < EOSsize; i++) {
-				if (c[i] == -1)
-					break;
-				fos.write(c[i]);
+			for (Integer c : mayBeEos) {
+				fos.write(c);
 			}
 		}
 		fos.close();
@@ -73,41 +80,58 @@ public class IOStream {
 	}
 
 	public void transTo(IOStream yourStream) throws Exception {
-		int c[] = new int[EOSsize];
 		while (true) {
-			for (int i = 0; i < EOSsize; i++)
-				c[i] = -1;
-			for (int i = 0; i < EOSsize; i++) {
-				if ((c[i] = is.read()) != 255)
-					break;
-			}
-			if (c[EOSsize - 1] == 255)
-				break;
-			for (int i = 0; i < EOSsize; i++) {
-				if (c[i] == -1)
-					break;
-				yourStream.os.write(c[i]);
+			Vector<Integer> mayBeEos = mayBeEOS();
+			if (mayBeEos.size() == EOSsize + 1)
+				break;// 如果是真正的EOS就结束了
+
+			for (Integer c : mayBeEos) {
+				yourStream.os.write(c);
 			}
 		}
 	}
+
+	public void transToAllExcept(int myId) throws Exception {
+		// 第一步：向每一个客户写入自己的ID
+		for (IOStream yourStream : MultiTalkServer.allStream) {
+			if (yourStream.equals(this))
+				continue;// 消息不发送个自己
+			yourStream.os.write(myId);// 告知目标客户自己的ID
+		}
+		// 第二步：取出自己流中的消息，发送给其他每一个客户
+		while (true) {// 由于消息是一段一段传输的，所以只能分三步走，不可合成一步
+			Vector<Integer> mayBeEos = mayBeEOS();
+			if (mayBeEos.size() == EOSsize + 1)
+				break;// 如果是真正的EOS就结束了
+
+			for (IOStream yourStream : MultiTalkServer.allStream) {
+				if (yourStream.equals(this))
+					continue;// 消息不发送个自己
+				for (Integer c : mayBeEos) {
+					yourStream.os.write(c);
+				}
+			}
+		}
+		// 第三步：刷新每一个客户输出流
+		for (IOStream yourStream : MultiTalkServer.allStream) {
+			if (yourStream.equals(this))
+				continue;// 消息不发送个自己
+			yourStream.addEOS();
+			yourStream.os.flush();
+		}
+	}
+
 	public String messageFromStream() throws Exception {// 返回收到的信息
 		byte[] b = new byte[102400];
 		int cnt = 0;
 
-		int c[] = new int[EOSsize];
 		while (true) {
-			for (int i = 0; i < EOSsize; i++)
-				c[i] = -1;
-			for (int i = 0; i < EOSsize; i++) {
-				if ((c[i] = is.read()) != 255)
-					break;
-			}
-			if (c[EOSsize - 1] == 255)
-				break;
-			for (int i = 0; i < EOSsize; i++) {
-				if (c[i] == -1)
-					break;
-				b[cnt++] = (byte) c[i];
+			Vector<Integer> mayBeEos = mayBeEOS();
+			if (mayBeEos.size() == EOSsize + 1)
+				break;// 如果是真正的EOS就结束了
+
+			for (Integer c : mayBeEos) {
+				b[cnt++] = c.byteValue();
 			}
 		}
 		return new String(b, "GBK");// 防止中文乱码

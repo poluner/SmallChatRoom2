@@ -14,7 +14,8 @@ public class ReceiveThread extends Thread {
 
 	public void run() {// 接收线程
 		try {
-			winClient.setTitle("Hi client " + ioStream.is.read());// 设置客户自己的ID
+			winClient.myId = ioStream.is.read();// 得到自己的ID
+			winClient.setTitle("Hi client " + winClient.myId);// 设置客户自己的ID
 
 			while (true) {
 				int yourId = ioStream.is.read();
@@ -25,10 +26,11 @@ public class ReceiveThread extends Thread {
 					historyMessage += "\n";// 如果没有历史纪录就不加换行符
 
 				if (isFile == 0) {
-					winClient.receiveText.setText(historyMessage +"client "+ yourId + " say: " + ioStream.messageFromStream());// 保留历史纪录
+					winClient.receiveText.setText(historyMessage + yourId + ": " + ioStream.messageFromStream());// 保留历史纪录
 				} else {
 					String fileName = ioStream.fileFromStream();
-					winClient.receiveText.setText(historyMessage + "received a file from " + yourId + " it has been saved as " + fileName);
+					winClient.receiveText
+							.setText(historyMessage + yourId + ": Send A File To You \"" + fileName + "\"");
 					showIfImage(fileName);// 如果是图片就会展示出来
 				}
 			}

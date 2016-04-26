@@ -5,7 +5,7 @@ import java.util.Vector;
 import iostream.IOStream;
 
 public class MultiTalkServer {
-	static Vector<IOStream> allStream = new Vector<IOStream>();// 保存所有客户的流
+	public static Vector<IOStream> allStream = new Vector<IOStream>();// 保存所有客户的流
 
 	public static void main(String args[]) {
 		try {

@@ -16,6 +16,10 @@ public class SendThread extends Thread {
 	public void run() {// 发送线程
 		try {
 			while (true) {// 发送线程
+				String historyMessage = winClient.receiveText.getText();
+				if (historyMessage.length() != 0)
+					historyMessage += '\n';
+
 				if (winClient.isFile == false) {
 					if (winClient.keyEvent == null || winClient.keyEvent.getKeyCode() != KeyEvent.VK_ENTER
 							|| winClient.sendText.getText().length() == 0) {
@@ -26,6 +30,9 @@ public class SendThread extends Thread {
 						winClient.keyEvent = null;
 						continue;// 如果没有输入目标客户ID就重新操作
 					}
+
+					winClient.receiveText
+							.setText(historyMessage + winClient.myId + ": " + winClient.sendText.getText());
 
 					ioStream.os.write(Integer.parseInt(winClient.receiverIdText.getText()));// 目标客户
 					ioStream.os.write(0);// 发送文字用0表示
@@ -44,11 +51,7 @@ public class SendThread extends Thread {
 
 					winClient.isFile = false;// 发送之后就将isFile赋值false
 
-					String historyMessage = winClient.receiveText.getText();
-					if (historyMessage.length() != 0)
-						historyMessage += '\n';
-					winClient.receiveText
-							.setText(historyMessage + "sended a file to " + winClient.receiverIdText.getText());
+					winClient.receiveText.setText(historyMessage + winClient.myId + ": File Send Successful!");
 				}
 
 				ioStream.addEOS();

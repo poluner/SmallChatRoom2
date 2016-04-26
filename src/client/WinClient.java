@@ -5,6 +5,7 @@ import java.awt.event.*;
 import javax.swing.*;
 
 public class WinClient extends JFrame implements ActionListener, KeyListener {
+	int myId;// 记录自己的ID
 	boolean isFile = false;// 默认不发送文件
 	String pathName = null;
 	KeyEvent keyEvent = null;
