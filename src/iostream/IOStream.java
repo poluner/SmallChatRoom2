@@ -19,19 +19,15 @@ public class IOStream {
 		sin = new Scanner(System.in);
 	}
 
-	public void addEOS() throws Exception {// EOS由一个254加EOSsize个255组成，避免文件结尾是255而误判成EOS
-		os.write(254);
+	public void addEOS() throws Exception {// EOS还是用255数组表示
 		for (int i = 0; i < EOSsize; i++) {
 			os.write(255);
 		}
 	}
 
-	public Vector<Integer> mayBeEOS() throws IOException {// 只有发现了一个254和EOSsize个255才是真正的EOS
+	public Vector<Integer> mayBeEOS() throws IOException {
 		Vector<Integer> vi = new Vector<Integer>();
 
-		vi.addElement(is.read());
-		if (vi.lastElement() != 254)
-			return vi;
 		for (int i = 0; i < EOSsize; i++) {
 			vi.addElement(is.read());
 			if (vi.lastElement() != 255)
@@ -68,7 +64,7 @@ public class IOStream {
 
 		while (true) {
 			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize + 1)
+			if (mayBeEos.size() == EOSsize)
 				break;// 如果是真正的EOS就结束了
 
 			for (Integer c : mayBeEos) {
@@ -82,7 +78,7 @@ public class IOStream {
 	public void transTo(IOStream yourStream) throws Exception {
 		while (true) {
 			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize + 1)
+			if (mayBeEos.size() == EOSsize)
 				break;// 如果是真正的EOS就结束了
 
 			for (Integer c : mayBeEos) {
@@ -101,7 +97,7 @@ public class IOStream {
 		// 第二步：取出自己流中的消息，发送给其他每一个客户
 		while (true) {// 由于消息是一段一段传输的，所以只能分三步走，不可合成一步
 			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize + 1)
+			if (mayBeEos.size() == EOSsize)
 				break;// 如果是真正的EOS就结束了
 
 			for (IOStream yourStream : MultiTalkServer.allStream) {
@@ -127,7 +123,7 @@ public class IOStream {
 
 		while (true) {
 			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize + 1)
+			if (mayBeEos.size() == EOSsize)
 				break;// 如果是真正的EOS就结束了
 
 			for (Integer c : mayBeEos) {
