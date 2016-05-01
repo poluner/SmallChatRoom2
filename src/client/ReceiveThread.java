@@ -13,16 +13,13 @@ public class ReceiveThread extends Thread {
 	public void run() {// 接收线程
 		try {
 			while (true) {
-				String line = ioStream.is.readLine();
-				int yourId = Integer.parseInt(line.substring(0, 1));
-				String message = line.substring(1, line.length());
+				int yourId = Integer.parseInt(ioStream.is.readLine());
+				String message = ioStream.is.readLine();
 
 				System.out.println("client " + yourId + " say:" + message);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 	}
-
 }
