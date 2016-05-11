@@ -22,19 +22,14 @@ public class ServerThread extends Thread {
 			myStream.os.flush();
 			while (true) {// 服务器永远运行
 				// 从自己在服务器中布置的socket中取出自己发送的信息，分离出自己要发送的目标客户的Id
-				while (myStream.is.available() == 0)
-					sleep(10);// 没有接收到就一直睡眠
 
 				int yourId = myStream.is.read();// 目标客户
-
 				if (yourId == myId) {// 如果youId==myId就将消息送达其他每一个客户(除了自己)，从而实现群聊
 					myStream.transToAllExcept(myId);
 				} else {// 否则送达指定客户
 					IOStream yourStream = MultiTalkServer.allStream.elementAt(yourId);
-					yourStream.os.write(myId);// 告知目标客户自己的ID
+					yourStream.os.write(myId);// 上传我的ID
 					myStream.transTo(yourStream);
-					yourStream.addEOS();
-					yourStream.os.flush();
 				}
 			}
 		} catch (Exception e) {

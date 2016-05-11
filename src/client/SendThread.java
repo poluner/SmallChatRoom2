@@ -34,9 +34,8 @@ public class SendThread extends Thread {
 					winClient.receiveText
 							.setText(historyMessage + winClient.myId + ": " + winClient.sendText.getText());
 
-					ioStream.os.write(Integer.parseInt(winClient.receiverIdText.getText()));// 目标客户
-					ioStream.os.write(0);// 发送文字用0表示
-					ioStream.os.write(winClient.sendText.getText().getBytes("GBK"));// 防止中文乱码
+					ioStream.messageToStream(Integer.parseInt(winClient.receiverIdText.getText()),
+							winClient.sendText.getText());// 上传文字
 
 					winClient.sendText.setText("");// 发送之后就将发送区清空
 					winClient.keyEvent = null;// 发完消息后就将回车事件赋上null
@@ -44,18 +43,12 @@ public class SendThread extends Thread {
 				} else {
 					if (winClient.receiverIdText.getText().length() == 0)
 						continue;// 如果没有输入接收者ID就重新操作
-					ioStream.os.write(Integer.parseInt(winClient.receiverIdText.getText()));// 目标客户
-					ioStream.os.write(1);// 发送文件用1表示
 
-					ioStream.fileToStream(winClient.pathName);
+					ioStream.fileToStream(Integer.parseInt(winClient.receiverIdText.getText()), winClient.pathName);
 
 					winClient.isFile = false;// 发送之后就将isFile赋值false
-
 					winClient.receiveText.setText(historyMessage + winClient.myId + ": File Send Successful!");
 				}
-
-				ioStream.addEOS();
-				ioStream.os.flush();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

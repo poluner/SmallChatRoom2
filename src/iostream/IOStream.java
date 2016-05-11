@@ -8,53 +8,47 @@ import java.util.*;
 import server.MultiTalkServer;
 
 public class IOStream {
-	final static int EOSsize = 1000;// EndOfStream,流结束标志长度
-	public OutputStream os;
-	public InputStream is;
+	public DataOutputStream os;
+	public DataInputStream is;
 	public Scanner sin;
 
 	public IOStream(Socket socket) throws Exception {
-		os = socket.getOutputStream();
-		is = socket.getInputStream();
+		os = new DataOutputStream(socket.getOutputStream());
+		is = new DataInputStream(socket.getInputStream());
 		sin = new Scanner(System.in);
 	}
 
-	public void addEOS() throws Exception {// EOS还是用255数组表示
-		for (int i = 0; i < EOSsize; i++) {
-			os.write(255);
-		}
-	}
+	public void fileToStream(int yourId, String pathName) throws Exception {// 将文件pathName写入到流中
+		os.write(yourId);// 上传目标客户
+		os.write(1);// 发文件用1表示
 
-	public Vector<Integer> mayBeEOS() throws IOException {
-		Vector<Integer> vi = new Vector<Integer>();
-
-		for (int i = 0; i < EOSsize; i++) {
-			vi.addElement(is.read());
-			if (vi.lastElement() != 255)
-				return vi;
-		}
-		return vi;// 这里返回的才是EOS
-	}
-
-	public void fileToStream(String pathName) throws Exception {// 将文件pathName写入到流中
+		File file = new File(pathName);
 		String fileType = pathName.substring(pathName.indexOf('.'), pathName.length());
-		os.write(fileType.getBytes());// 传入文件类型
-		os.write(128);// 由于文件类型是西文字符，范围在0~127，用128作为分隔符即可
+		byte b[] = fileType.getBytes("GBK");
 
-		FileInputStream fis = new FileInputStream(pathName);
+		os.writeLong(file.length() + b.length + 8);// 总长度（long型）=上传文件长度+文件类型长度+8
+		os.writeLong(b.length);// 上传文件类型长度（8byte）
+		os.write(b);// 上传文件类型
+
+		FileInputStream fis = new FileInputStream(file);
 		int c;
 		while ((c = fis.read()) != -1) {// 文件结束标志是-1
 			os.write(c);
 		}
 		fis.close();
+		os.flush();
 	}
 
 	public String fileFromStream() throws Exception {// 从流中获得文件，返回文件名
-		String fileType = "";// 文件类型
-		int c0;
-		while ((c0 = is.read()) != 128) {// 文件名是西文字符范围0~127，所以用128作为分隔符
-			fileType += (char) c0;
+		long length = is.readLong();
+		int fileTypeLength = (int) is.readLong();// 读入8字节的long型在转为int
+		long fileLength = length - fileTypeLength - 8;
+
+		byte b[] = new byte[fileTypeLength];
+		for (int i = 0; i < fileTypeLength; i++) {
+			b[i] = is.readByte();
 		}
+		String fileType = new String(b, "GBK");
 
 		Date date = new Date();
 		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -62,73 +56,66 @@ public class IOStream {
 		String fileName = time + fileType;
 		FileOutputStream fos = new FileOutputStream(fileName);
 
-		while (true) {
-			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize)
-				break;// 如果是真正的EOS就结束了
-
-			for (Integer c : mayBeEos) {
-				fos.write(c);
-			}
+		while (fileLength-- > 0) {
+			fos.write(is.read());
 		}
 		fos.close();
 		return fileName;
 	}
 
 	public void transTo(IOStream yourStream) throws Exception {
-		while (true) {
-			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize)
-				break;// 如果是真正的EOS就结束了
-
-			for (Integer c : mayBeEos) {
-				yourStream.os.write(c);
-			}
+		int isFile = is.read();
+		long length = is.readLong();// 总长度（long型）
+		yourStream.os.write(isFile);// 文件或者文字
+		yourStream.os.writeLong(length);// 总长度
+		while (length-- > 0) {
+			yourStream.os.write(is.read());
 		}
+		os.flush();
 	}
 
 	public void transToAllExcept(int myId) throws Exception {
-		// 第一步：向每一个客户写入自己的ID
-		for (IOStream yourStream : MultiTalkServer.allStream) {
-			if (yourStream.equals(this))
-				continue;// 消息不发送个自己
-			yourStream.os.write(myId);// 告知目标客户自己的ID
-		}
-		// 第二步：取出自己流中的消息，发送给其他每一个客户
-		while (true) {// 由于消息是一段一段传输的，所以只能分三步走，不可合成一步
-			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize)
-				break;// 如果是真正的EOS就结束了
+		int isFile = is.read();
+		long length = is.readLong();
 
+		for (IOStream yourStream : MultiTalkServer.allStream) {
+			if (yourStream.equals(this) == false) {
+				yourStream.os.write(myId);
+				yourStream.os.write(isFile);
+				yourStream.os.writeLong(length);
+			}
+		}
+
+		while (length-- > 0) {
+			int c = is.read();
 			for (IOStream yourStream : MultiTalkServer.allStream) {
-				if (yourStream.equals(this))
-					continue;// 消息不发送个自己
-				for (Integer c : mayBeEos) {
+				if (yourStream.equals(this) == false) {
 					yourStream.os.write(c);
 				}
 			}
 		}
-		// 第三步：刷新每一个客户输出流
 		for (IOStream yourStream : MultiTalkServer.allStream) {
-			if (yourStream.equals(this))
-				continue;// 消息不发送个自己
-			yourStream.addEOS();
-			yourStream.os.flush();
+			if (yourStream.equals(this) == false) {
+				yourStream.os.flush();
+			}
 		}
 	}
 
+	public void messageToStream(int yourId, String message) throws Exception {
+		os.write(yourId);// 上传目标客户
+		os.write(0);// 发送文字用0表示
+
+		byte b[] = message.getBytes("GBK");
+		os.writeLong(b.length);// 总长度（long型），这里只有文字
+		os.write(b);// 防止中文乱码
+		os.flush();
+	}
+
 	public String messageFromStream() throws Exception {// 返回收到的信息
-		byte[] b = new byte[102400];
-		int cnt = 0;
-
-		while (true) {
-			Vector<Integer> mayBeEos = mayBeEOS();
-			if (mayBeEos.size() == EOSsize)
-				break;// 如果是真正的EOS就结束了
-
-			for (Integer c : mayBeEos) {
-				b[cnt++] = c.byteValue();
-			}
+		int wordLength = (int) is.readLong();
+		byte b[] = new byte[wordLength];
+		for (int i = 0; i < wordLength; i++) {
+			b[i] = is.readByte();
 		}
 		return new String(b, "GBK");// 防止中文乱码
 	}

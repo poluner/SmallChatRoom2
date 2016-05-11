@@ -42,7 +42,7 @@ public class ReceiveThread extends Thread {
 	void showIfImage(String fileName) {
 		String fileType = fileName.substring(fileName.indexOf('.'), fileName.length());
 		String imageType[] = { ".jpg", ".jpeg", ".png", ".bmp" };
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < imageType.length; i++) {
 			if (fileType.equalsIgnoreCase(imageType[i])) {
 				winClient.showImage(fileName);
 				break;
